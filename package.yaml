@@ -26,6 +26,7 @@ dependencies:
 - file-embed
 - bytestring
 - text
+- ansi-terminal
 
 ghc-options:
 - -Wall
