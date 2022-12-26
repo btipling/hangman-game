@@ -22,6 +22,28 @@ printPickedChar charToDisplay = do
   putChar charToDisplay
   setSGR [Reset]
 
+data Game a = Game {gameword :: a}
+instance Monad Game where
+  gs >>= k        = k (gameword gs)
+
+instance Functor Game where
+  fmap f (Game x) = Game (f x)
+
+instance Applicative Game where
+  pure = Game
+  Game f <*> Game x = Game (f x)
+
+unwrap :: (Game a) -> a
+unwrap g = gameword g
+
+addStuff :: [Char] -> Game [Char]
+addStuff toAdd = Game {gameword = (toAdd ++ "lolzerbolzer")}
+
+anotherFunc :: [Char] -> Game [Char]
+anotherFunc myStr = do
+  newStr <- addStuff myStr
+  wut <- addStuff newStr
+  return wut
 
 
 someFunc :: IO ()
@@ -37,4 +59,8 @@ someFunc = do
     forM_  charList $ (\x -> if x == 'a' then printPickedChar x else putChar x) 
     putChar '\n'
     putStrLn "All done!"
+    let lol = unwrap (anotherFunc "lolzer")
+    putStrLn lol
+    putStrLn "reallydone!"
+    
 
