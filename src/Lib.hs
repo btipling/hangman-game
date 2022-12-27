@@ -12,7 +12,7 @@ import Data.Text.Encoding ( decodeUtf8 )
 import Data.Text ( pack, unpack )
 import System.Console.ANSI
     ( setSGR,
-      Color(Red),
+      Color(Red, Green),
       ColorIntensity(Vivid),
       ConsoleLayer(Foreground),
       SGR(Reset, SetColor) )
@@ -21,9 +21,15 @@ import Control.Monad (forM_)
 contentBytes :: Data.ByteString.ByteString
 contentBytes = $(embedFile "./resources/words.txt")
 
-printPickedChar :: Char -> IO ()
-printPickedChar charToDisplay = do 
+printIncorrectChar :: Char -> IO ()
+printIncorrectChar charToDisplay = do 
   setSGR [SetColor Foreground Vivid Red]
+  putChar charToDisplay
+  setSGR [Reset]
+
+printCorrectChar :: Char -> IO ()
+printCorrectChar charToDisplay = do 
+  setSGR [SetColor Foreground Vivid Green]
   putChar charToDisplay
   setSGR [Reset]
 
@@ -88,8 +94,16 @@ tick gs = do
       Left v -> putStrLn $ "Game over: " ++ v
       Right v -> do
         putStrLn $ "Try again: " ++ v
-        putStrLn $ "Correct guesses: `" ++ correctGuesses updatedGs ++ "`"
-        putStrLn $ "Incorrect guesses: `" ++ inCorrectGuesses updatedGs ++ "`"
+        putStrLn "Correct guesses:"
+        forM_ (correctGuesses updatedGs) $ \x -> do
+          printCorrectChar x 
+          putChar ' '
+        putChar '\n'
+        putStrLn "Incorrect guesses:"
+        forM_ (inCorrectGuesses updatedGs) $ \x -> do
+          printIncorrectChar x 
+          putChar ' '
+        putChar '\n'
         tick updatedGs
 
 
@@ -103,9 +117,7 @@ runGame = do
     let pickedWord = gameWords !! randI
     let pickedWordTxt = Data.Text.pack pickedWord
     let _gameword = Data.Text.unpack pickedWordTxt
-    forM_  _gameword $ \x -> if x == 'a' then printPickedChar x else putChar x
-    putChar '\n'
-    putStrLn "Game starting!"
+    putStrLn ("Game starting! (" ++ _gameword ++ ")")
     tick GameState{correctGuesses = [], inCorrectGuesses = [], gameword = _gameword, state = Right ""}
   
     
