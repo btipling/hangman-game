@@ -34,7 +34,7 @@ someFunc = do
     let pickedWord = gameWords !! randI
     let pickedWordTxt = Data.Text.pack pickedWord
     let charList = Data.Text.unpack pickedWordTxt
-    forM_  charList $ (\x -> if x == 'a' then printPickedChar x else putChar x) 
+    forM_  charList $ \x -> if x == 'a' then printPickedChar x else putChar x
     putChar '\n'
     putStrLn "All done!"
 
