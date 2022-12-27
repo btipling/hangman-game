@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Lib
-    ( someFunc
+    ( runGame
     ) where
 
 
@@ -27,7 +27,7 @@ printPickedChar charToDisplay = do
   putChar charToDisplay
   setSGR [Reset]
 
-data GameState = GameState {guesses :: Integer, gameword :: [Char]}
+data GameState = GameState {guesses :: [Char], gameword :: [Char], state :: Either String String }
 
 newtype Game a = Game a
 instance Monad Game where
@@ -44,16 +44,40 @@ unwrap :: Game a -> a
 unwrap (Game a) = a
 
 addStuff :: GameState -> Game GameState
-addStuff GameState{guesses=g, gameword=gw} = Game (GameState{guesses = g, gameword = gw ++ "lolzerbolzer"})
+addStuff GameState{guesses=g, gameword=gw, state=s} = Game (GameState{guesses = g, gameword = gw ++ "lolzerbolzer", state=s})
 
-anotherFunc :: GameState -> Game GameState
-anotherFunc myStr = do
+continueGame :: GameState -> String -> Game GameState
+continueGame GameState{guesses=g, gameword=gw} msg = Game (GameState{guesses = g, gameword = gw, state=Right msg})
+
+gameOver :: GameState -> String -> Game GameState
+gameOver GameState{guesses=g, gameword=gw} msg = Game (GameState{guesses = g, gameword = gw, state=Left msg})
+
+progressGame :: GameState -> Game GameState
+progressGame myStr = do
   newStr <- addStuff myStr
-  addStuff newStr
+  gs <- addStuff newStr
+  if length (guesses gs) > maxGuesses then
+    gameOver gs "All done!"
+  else
+    continueGame gs "Keep going!"
+
+maxGuesses :: Int
+maxGuesses = 6
+
+tick :: GameState -> IO ()
+tick gs = do
+    putStrLn "Type a guess:"
+    guess <- getChar
+    let updatedGs = unwrap (progressGame GameState{guesses = guesses gs ++ [guess], gameword = gameword gs, state=state gs}) 
+    case state updatedGs of
+      Left v -> putStrLn $ "Game over: " ++ v
+      Right v -> do
+        putStrLn $ "Tray again: " ++ v
+        tick updatedGs
 
 
-someFunc :: IO ()
-someFunc = do 
+runGame :: IO ()
+runGame = do 
     putStrLn "Hello!"
     let contentsText = decodeUtf8 contentBytes
     let contents = Data.Text.unpack contentsText
@@ -65,13 +89,7 @@ someFunc = do
     forM_  charList $ \x -> if x == 'a' then printPickedChar x else putChar x
     putChar '\n'
     putStrLn "All done!"
-    let lol = unwrap (anotherFunc GameState{guesses = 1, gameword = "lolzer"})
-    putStrLn $ gameword lol
-    let numGuesses = guesses lol
-    putStrLn $ "Guesses:" ++ show numGuesses
-    putStrLn "reallydone!"
-    putStrLn "Type a guess:"
-    guess <- getChar
-    putStrLn ("You typed: " ++ [guess])
+    tick GameState{guesses = [], gameword = "lolzer", state = Right "Game started"}
+  
     
 
