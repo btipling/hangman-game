@@ -27,9 +27,11 @@ printPickedChar charToDisplay = do
   putChar charToDisplay
   setSGR [Reset]
 
-newtype Game a = Game {gameword :: a}
+data GameState = GameState {guesses :: Integer, gameword :: [Char]}
+
+newtype Game a = Game a
 instance Monad Game where
-  gs >>= k        = k (gameword gs)
+  (Game a) >>= k        = k a
 
 instance Functor Game where
   fmap f (Game x) = Game (f x)
@@ -39,12 +41,12 @@ instance Applicative Game where
   Game f <*> Game x = Game (f x)
 
 unwrap :: Game a -> a
-unwrap = gameword
+unwrap (Game a) = a
 
-addStuff :: [Char] -> Game [Char]
-addStuff toAdd = Game {gameword = toAdd ++ "lolzerbolzer"}
+addStuff :: GameState -> Game GameState
+addStuff GameState{guesses=g, gameword=gw} = Game (GameState{guesses = g, gameword = gw ++ "lolzerbolzer"})
 
-anotherFunc :: [Char] -> Game [Char]
+anotherFunc :: GameState -> Game GameState
 anotherFunc myStr = do
   newStr <- addStuff myStr
   addStuff newStr
@@ -63,8 +65,10 @@ someFunc = do
     forM_  charList $ \x -> if x == 'a' then printPickedChar x else putChar x
     putChar '\n'
     putStrLn "All done!"
-    let lol = unwrap (anotherFunc "lolzer")
-    putStrLn lol
+    let lol = unwrap (anotherFunc GameState{guesses = 1, gameword = "lolzer"})
+    putStrLn $ gameword lol
+    let numGuesses = guesses lol
+    putStrLn $ "Guesses:" ++ show numGuesses
     putStrLn "reallydone!"
     putStrLn "Type a guess:"
     guess <- getChar
