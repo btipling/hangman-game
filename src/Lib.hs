@@ -27,7 +27,7 @@ printPickedChar charToDisplay = do
   putChar charToDisplay
   setSGR [Reset]
 
-data Game a = Game {gameword :: a}
+newtype Game a = Game {gameword :: a}
 instance Monad Game where
   gs >>= k        = k (gameword gs)
 
@@ -38,17 +38,16 @@ instance Applicative Game where
   pure = Game
   Game f <*> Game x = Game (f x)
 
-unwrap :: (Game a) -> a
-unwrap g = gameword g
+unwrap :: Game a -> a
+unwrap = gameword
 
 addStuff :: [Char] -> Game [Char]
-addStuff toAdd = Game {gameword = (toAdd ++ "lolzerbolzer")}
+addStuff toAdd = Game {gameword = toAdd ++ "lolzerbolzer"}
 
 anotherFunc :: [Char] -> Game [Char]
 anotherFunc myStr = do
   newStr <- addStuff myStr
-  wut <- addStuff newStr
-  return wut
+  addStuff newStr
 
 
 someFunc :: IO ()
