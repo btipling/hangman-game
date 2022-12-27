@@ -43,23 +43,38 @@ instance Applicative Game where
 unwrap :: Game a -> a
 unwrap (Game a) = a
 
-addStuff :: GameState -> Game GameState
-addStuff gs = Game (gs{gameword = gameword gs ++ "lolzerbolzer"})
-
 continueGame :: GameState -> String -> Game GameState
 continueGame gs msg = Game (gs{state=Right msg})
 
 gameOver :: GameState -> String -> Game GameState
 gameOver gs msg = Game (gs{state=Left msg})
 
-progressGame :: GameState -> Game GameState
-progressGame myStr = do
-  newStr <- addStuff myStr
-  gs <- addStuff newStr
-  if length (inCorrectGuesses gs) > maxGuesses then
-    gameOver gs "All done!"
+hasChar :: GameState -> Char -> Game GameState
+hasChar gs guess
+  | guess `elem` gameword gs = if guess `elem` correctGuesses gs  then
+         Game gs
+      else
+         Game gs{correctGuesses=correctGuesses gs ++ [guess]}
+  | guess `elem` inCorrectGuesses gs = Game gs
+  | otherwise = Game gs{inCorrectGuesses=inCorrectGuesses gs ++ [guess]}
+
+foundAll :: [Char] -> [Char] -> Bool
+foundAll _currentGuesses _gameword
+  | null _gameword = True 
+  | head _gameword `elem` _currentGuesses = foundAll _currentGuesses $ tail _gameword
+  | otherwise = False
+
+
+progressGame :: GameState -> Char -> Game GameState
+progressGame gs guess = do
+  updatedGs <- hasChar gs guess 
+  if length (inCorrectGuesses updatedGs) > maxGuesses then
+    gameOver updatedGs "You lost!"
   else
-    continueGame gs "Keep going!"
+    if foundAll (correctGuesses updatedGs) (gameword updatedGs) then
+      gameOver updatedGs "You won!"
+    else
+      continueGame updatedGs "Keep going!"
 
 maxGuesses :: Int
 maxGuesses = 6
@@ -68,11 +83,13 @@ tick :: GameState -> IO ()
 tick gs = do
     putStrLn "Type a guess:"
     guess <- getChar
-    let updatedGs = unwrap (progressGame gs{inCorrectGuesses = inCorrectGuesses gs ++ [guess]}) 
+    let updatedGs = unwrap (progressGame gs guess) 
     case state updatedGs of
       Left v -> putStrLn $ "Game over: " ++ v
       Right v -> do
-        putStrLn $ "Tray again: " ++ v
+        putStrLn $ "Try again: " ++ v
+        putStrLn $ "Correct guesses: `" ++ correctGuesses updatedGs ++ "`"
+        putStrLn $ "Incorrect guesses: `" ++ inCorrectGuesses updatedGs ++ "`"
         tick updatedGs
 
 
@@ -85,11 +102,11 @@ runGame = do
     randI <- randomRIO (0, Data.List.length gameWords - 1)
     let pickedWord = gameWords !! randI
     let pickedWordTxt = Data.Text.pack pickedWord
-    let charList = Data.Text.unpack pickedWordTxt
-    forM_  charList $ \x -> if x == 'a' then printPickedChar x else putChar x
+    let _gameword = Data.Text.unpack pickedWordTxt
+    forM_  _gameword $ \x -> if x == 'a' then printPickedChar x else putChar x
     putChar '\n'
-    putStrLn "All done!"
-    tick GameState{correctGuesses = [], inCorrectGuesses = [], gameword = "lolzer", state = Right "Game started"}
+    putStrLn "Game starting!"
+    tick GameState{correctGuesses = [], inCorrectGuesses = [], gameword = _gameword, state = Right ""}
   
     
 
