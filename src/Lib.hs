@@ -66,5 +66,8 @@ someFunc = do
     let lol = unwrap (anotherFunc "lolzer")
     putStrLn lol
     putStrLn "reallydone!"
+    putStrLn "Type a guess:"
+    guess <- getChar
+    putStrLn ("You typed: " ++ [guess])
     
 
