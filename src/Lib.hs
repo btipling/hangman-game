@@ -12,8 +12,8 @@ import Data.Text.Encoding ( decodeUtf8 )
 import Data.Text ( pack, unpack )
 import System.Console.ANSI
     ( setSGR,
-      Color(Red, Green),
-      ColorIntensity(Vivid),
+      Color(Red, Green, White),
+      ColorIntensity(Vivid, Dull),
       ConsoleLayer(Foreground),
       SGR(Reset, SetColor) )
 import Control.Monad (forM_)
@@ -22,14 +22,20 @@ import Data.Char
 contentBytes :: Data.ByteString.ByteString
 contentBytes = $(embedFile "./resources/words.txt")
 
+printClueChar :: Char -> IO ()
+printClueChar charToDisplay = do 
+  setSGR [SetColor Foreground Dull White]
+  putChar charToDisplay
+  setSGR [Reset]
+
 printIncorrectChar :: Char -> IO ()
 printIncorrectChar charToDisplay = do 
   setSGR [SetColor Foreground Vivid Red]
   putChar charToDisplay
   setSGR [Reset]
 
-printCorrectChar :: Char -> IO ()
-printCorrectChar charToDisplay = do 
+printGameWord :: Char -> IO ()
+printGameWord charToDisplay = do 
   setSGR [SetColor Foreground Vivid Green]
   putChar charToDisplay
   setSGR [Reset]
@@ -91,25 +97,39 @@ getNonSpaceChar = do
   guess <- getChar
   if isSpace guess then getNonSpaceChar else return guess
 
+guessedChar :: Char -> [Char] -> Bool
+guessedChar currentChar hasGuessed 
+  | null hasGuessed = False
+  | currentChar `elem` hasGuessed = True
+  | otherwise = False 
+
+getClue :: [Char] -> [Char] -> [Char]
+getClue [] _ = []
+getClue (x:xs) hasGuessed = (if guessedChar x hasGuessed then x else '_') : getClue xs hasGuessed
+
+printClue :: (Char -> IO ()) -> [Char] -> IO ()
+printClue charPrinter clue = do
+  forM_ clue $ \x -> do
+          charPrinter x 
+          putChar ' '
+  putChar '\n'
+
 tick :: GameState -> IO ()
 tick gs = do
+    putStrLn "Clue:"
+    printClue printClueChar (getClue (gameword gs) (correctGuesses gs))
     putStrLn "Type a guess:"
     guess <- getNonSpaceChar
     let updatedGs = unwrap (progressGame gs guess) 
     case state updatedGs of
-      Left v -> putStrLn $ "Game over: " ++ v
+      Left v -> do
+        putStrLn $ "Game over: " ++ v
+        putStrLn "The word was:"
+        printClue printGameWord (gameword updatedGs)
       Right v -> do
         putStrLn $ "Try again: " ++ v
-        putStrLn "Correct guesses:"
-        forM_ (correctGuesses updatedGs) $ \x -> do
-          printCorrectChar x 
-          putChar ' '
-        putChar '\n'
         putStrLn "Incorrect guesses:"
-        forM_ (inCorrectGuesses updatedGs) $ \x -> do
-          printIncorrectChar x 
-          putChar ' '
-        putChar '\n'
+        printClue printIncorrectChar (inCorrectGuesses updatedGs)
         tick updatedGs
 
 
