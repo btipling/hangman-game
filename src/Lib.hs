@@ -40,6 +40,58 @@ printGameWord charToDisplay = do
   putChar charToDisplay
   setSGR [Reset]
 
+gallows :: [String]
+gallows = ["\
+\  +---+\n\
+\  |   |\n\
+\      |\n\
+\      |\n\
+\      |\n\
+\      |\n\
+\=========","\
+\  +---+\n\
+\  |   |\n\
+\  O   |\n\
+\      |\n\
+\      |\n\
+\      |\n\
+\=========","\
+\  +---+\n\
+\  |   |\n\
+\  O   |\n\
+\  |   |\n\
+\      |\n\
+\      |\n\
+\=========","\
+\  +---+\n\
+\  |   |\n\
+\  O   |\n\
+\ /|   |\n\
+\      |\n\
+\      |\n\
+\=========","\
+\  +---+\n\
+\  |   |\n\
+\  O   |\n\
+\ /|\\  |\n\
+\      |\n\
+\      |\n\
+\=========","\
+\  +---+\n\
+\  |   |\n\
+\  O   |\n\
+\ /|\\  |\n\
+\ /    |\n\
+\      |\n\
+\=========","\
+\  +---+\n\
+\  |   |\n\
+\  O   |\n\
+\ /|\\  |\n\
+\ / \\  |\n\
+\      |\n\
+\========="]
+
 data GameState = GameState {inCorrectGuesses, correctGuesses, gameword :: [Char], state :: Either String String }
 
 newtype Game a = Game a
@@ -90,7 +142,7 @@ progressGame gs guess = do
       continueGame updatedGs "Keep going!"
 
 maxGuesses :: Int
-maxGuesses = 6
+maxGuesses = 5
 
 getNonSpaceChar :: IO Char
 getNonSpaceChar = do
@@ -114,6 +166,8 @@ printClue charPrinter clue = do
           putChar ' '
   putChar '\n'
 
+
+
 tick :: GameState -> IO ()
 tick gs = do
     putStrLn "Clue:"
@@ -121,6 +175,7 @@ tick gs = do
     putStrLn "Type a guess:"
     guess <- getNonSpaceChar
     let updatedGs = unwrap (progressGame gs guess) 
+    putStrLn $ gallows !! length (inCorrectGuesses updatedGs)
     case state updatedGs of
       Left v -> do
         putStrLn $ "Game over: " ++ v
