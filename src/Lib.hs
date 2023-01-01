@@ -17,6 +17,7 @@ import System.Console.ANSI
       ConsoleLayer(Foreground),
       SGR(Reset, SetColor) )
 import Control.Monad (forM_)
+import Data.Char
 
 contentBytes :: Data.ByteString.ByteString
 contentBytes = $(embedFile "./resources/words.txt")
@@ -85,10 +86,15 @@ progressGame gs guess = do
 maxGuesses :: Int
 maxGuesses = 6
 
+getNonSpaceChar :: IO Char
+getNonSpaceChar = do
+  guess <- getChar
+  if isSpace guess then getNonSpaceChar else return guess
+
 tick :: GameState -> IO ()
 tick gs = do
     putStrLn "Type a guess:"
-    guess <- getChar
+    guess <- getNonSpaceChar
     let updatedGs = unwrap (progressGame gs guess) 
     case state updatedGs of
       Left v -> putStrLn $ "Game over: " ++ v
