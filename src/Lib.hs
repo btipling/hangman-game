@@ -143,7 +143,7 @@ runGame = do
     let pickedWord = gameWords !! randI
     let pickedWordTxt = Data.Text.pack pickedWord
     let _gameword = Data.Text.unpack pickedWordTxt
-    putStrLn ("Game starting! (" ++ _gameword ++ ")")
+    putStrLn "Let's play hangman!"
     tick GameState{correctGuesses = [], inCorrectGuesses = [], gameword = _gameword, state = Right ""}
   
     
